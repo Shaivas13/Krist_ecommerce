@@ -4,6 +4,7 @@ import ProductCategoryCard from "../components/cards/ProductCategoryCard";
 import ProductCard from "../components/cards/ProductCard";
 import HeaderImage from "../utils/Images/HeaderImage.png";
 import { category } from "../utils/data";
+import axios from "axios";
 
 const Container = styled.div`
   padding: 20px 30px;
@@ -15,6 +16,7 @@ const Container = styled.div`
   align-items: center;
   gap: 30px;
   background: ${({ theme }) => theme.bg};
+
   @media (max-width: 768px) {
     padding: 20px 12px;
   }
@@ -33,6 +35,10 @@ const Img = styled.img`
   max-width: 1200px;
   height: 700px;
   object-fit: cover;
+
+  @media (max-width: 768px) {
+    height: 300px;
+  }
 `;
 
 const Title = styled.div`
@@ -48,46 +54,41 @@ const CardWrapper = styled.div`
   flex-wrap: wrap;
   gap: 24px;
   justify-content: center;
+
   @media (max-width: 750px) {
     gap: 14px;
   }
 `;
 
+const Loader = styled.div`
+  font-size: 18px;
+  color: ${({ theme }) => theme.text_primary};
+`;
+
 const Home = () => {
-  // Static Best Sellers data (4 products)
-  const bestSellers = [
-    {
-      _id: "1",
-      title: "Blue Cotton Shirt",
-      name: "Men’s Formal Wear",
-      price: { org: 499, mrp: 899, off: 45 },
-      image:
-        "https://www.urbanofashion.com/cdn/shop/files/shirtden2pc-iceblue-1.jpg",
-    },
-    {
-      _id: "2",
-      title: "Red Casual Shirt",
-      name: "Men’s Casual Collection",
-      price: { org: 599, mrp: 999, off: 40 },
-      image: "https://images-static.nykaa.com/media/catalog/product/5/3/5348836ASSFCUMOFU64217_4.jpg",
-    },
-    {
-      _id: "3",
-      title: "Smart Watch",
-      name: "Tech Accessories",
-      price: { org: 1299, mrp: 1999, off: 35 },
-      image:
-        "https://www.jiomart.com/images/product/original/rvv0jejch6/iloz-stylish-new-luxury-gold-black-men-watch-designer-professional-gold-quartz-fashion-analog-wrist-watch-for-men-product-images-rvv0jejch6-0-202210200514.jpg",
-    },
-    {
-      _id: "4",
-      title: "Black Belt",
-      name: "Belt Collection",
-      price: { org: 999, mrp: 1499, off: 33 },
-      image:
-        "https://m.media-amazon.com/images/I/71KCjw8zzlL._AC_UY1100_.jpg",
-    },
-  ];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/products"); // your backend URL
+        // Map img -> image and convert category array -> string
+        const fixedProducts = res.data.map((p) => ({
+          ...p,
+          image: p.img || p.image,
+          category: Array.isArray(p.category) && p.category.length > 0 ? p.category[0] : p.category,
+        }));
+        setProducts(fixedProducts);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <Container>
@@ -109,11 +110,15 @@ const Home = () => {
       {/* Best Sellers Section */}
       <Section>
         <Title center>Our Bestsellers</Title>
-        <CardWrapper>
-          {bestSellers.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
-        </CardWrapper>
+        {loading ? (
+          <Loader>Loading products...</Loader>
+        ) : (
+          <CardWrapper>
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </CardWrapper>
+        )}
       </Section>
     </Container>
   );

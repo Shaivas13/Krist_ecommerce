@@ -8,13 +8,16 @@ import Orders from "../models/Orders.js";
 dotenv.config();
 
 //user register controller
+
 export const UserRegister = async (req, res, next) => {
   try {
     const { email, password, name, img } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return next(createError(409, "Email is already in use"));
     }
+
     const salt = bcrypt.genSaltSync(10);
     const hashedpassword = bcrypt.hashSync(password, salt);
 
@@ -24,11 +27,19 @@ export const UserRegister = async (req, res, next) => {
       password: hashedpassword,
       img,
     });
-    const createduser = user.save();
+
+    const createduser = await user.save(); // ✅ added await
+
+    if (!process.env.JWT) {
+      console.error("❌ JWT secret missing — check your .env file");
+      return next(createError(500, "Server configuration error"));
+    }
+
     const token = jwt.sign({ id: createduser._id }, process.env.JWT, {
-      expiresIn: "9999 years",
+      expiresIn: "7d",
     });
-    return res.status(200).json({ token, user });
+
+    return res.status(200).json({ token, user: createduser });
   } catch (error) {
     return next(error);
   }

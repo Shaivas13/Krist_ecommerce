@@ -219,7 +219,7 @@ const ProductCard = ({ product }) => {
       <Top>
         <Image
           src={
-            product?.image
+            product?.img
           }
           alt={product?.title || "Product Image"}
           onError={(e) => {

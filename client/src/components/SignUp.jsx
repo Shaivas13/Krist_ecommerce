@@ -14,11 +14,13 @@ const Container = styled.div`
   flex-direction: column;
   gap: 36px;
 `;
+
 const Title = styled.div`
   font-size: 30px;
   font-weight: 800;
   color: ${({ theme }) => theme.primary};
 `;
+
 const Span = styled.div`
   font-size: 16px;
   font-weight: 400;
@@ -33,58 +35,63 @@ const SignUp = ({ setOpenAuth }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // ✅ Input validation
   const validateInputs = () => {
     if (!name || !email || !password) {
-      alert("Please fill in all fields");
+      dispatch(
+        openSnackbar({
+          message: "Please fill in all fields",
+          severity: "warning",
+        })
+      );
       return false;
     }
     return true;
   };
 
+  // ✅ Signup logic
   const handleSignUp = async () => {
+    if (!validateInputs()) return;
+
     setLoading(true);
     setButtonDisabled(true);
-    if (validateInputs()) {
-      await UserSignUp({ name, email, password })
-        .then((res) => {
-          dispatch(loginSuccess(res.data));
-          dispatch(
-            openSnackbar({
-              message: "Sign Up Successful",
-              severity: "success",
-            })
-          );
-          setLoading(false);
-          setButtonDisabled(false);
-          setOpenAuth(false);
-        })
-        .catch((err) => {
-          setButtonDisabled(false);
-          if (err.response) {
-            setLoading(false);
-            setButtonDisabled(false);
-            alert(err.response.data.message);
-            dispatch(
-              openSnackbar({
-                message: err.response.data.message,
-                severity: "error",
-              })
-            );
-          } else {
-            setLoading(false);
-            setButtonDisabled(false);
-            dispatch(
-              openSnackbar({
-                message: err.message,
-                severity: "error",
-              })
-            );
-          }
-        });
-    }
 
-    setButtonDisabled(false);
-    setLoading(false);
+    try {
+      const res = await UserSignUp({ name, email, password });
+
+      // ✅ Expecting token and user data from backend
+      const { token, user } = res.data;
+
+      // ✅ Save token for future API requests
+      localStorage.setItem("token", token);
+
+      // ✅ Update Redux store
+      dispatch(loginSuccess(user));
+
+      // ✅ Show success message
+      dispatch(
+        openSnackbar({
+          message: "Sign Up Successful 🎉",
+          severity: "success",
+        })
+      );
+
+      // ✅ Close modal
+      setOpenAuth(false);
+    } catch (err) {
+      const message =
+        err.response?.data?.message || "Something went wrong during signup.";
+      dispatch(
+        openSnackbar({
+          message,
+          severity: "error",
+        })
+      );
+      console.error("Sign Up Error:", err);
+    } finally {
+      setLoading(false);
+      setButtonDisabled(false);
+    }
   };
 
   return (
@@ -93,6 +100,7 @@ const SignUp = ({ setOpenAuth }) => {
         <Title>Create New Account 👋</Title>
         <Span>Please enter details to create a new account</Span>
       </div>
+
       <div style={{ display: "flex", gap: "20px", flexDirection: "column" }}>
         <TextInput
           label="Full Name"
